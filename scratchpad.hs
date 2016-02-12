@@ -1,16 +1,10 @@
 import Test.QuickCheck
 
--- Boilerplate Positive int Type
---module Positive (toPositive, Positive(unPositive)) where
---newtype Positive = Positive { unPositive :: Int }
---toPositive :: Int -> Maybe Positive
---toPositive n = if (n < 0) then Nothing else Just (Positive n)
--- /Boilerplate
-
 powers n = n : map (* n) (powers n)
-
-
 supertwos = powers 2
+
+isPowerNaive base n = n `elem` pows
+    where pows = takeWhile (<=n) (powers base)
 
 -- Identifies whether Number `n` is an exponent of Number `base`
 --
@@ -43,14 +37,14 @@ supertwos = powers 2
 --  1. if `m` is anything other than zero there is no chance of `n`
 --     being an exponent od `base`
 --
+-- FINAL
 isPower :: (Integral a, Ord a) => a -> a -> Bool
 isPower base n
-                -- | base == n           = True  -- wrong position
                 | base == 0           = True
                 | n == 1              = True
                 | n == 0              = False
                 | m /= 0              = False
-                | base == n           = True  -- correct position
+                | base == n           = True
                 | d < base            = False
                 | d == base && m == 0 = True
                 | d > base            = isPower base d
@@ -64,7 +58,7 @@ prop_isPowerDetectsExponents (NonNegative base) (NonNegative exponent) =
 
 -- isPower should return False for all non exponents
 prop_isPowerIsFalseOtherwise (NonNegative base) (NonNegative exponent) =
-    let maxOffset = base-1
+    let maxOffset = base - 1
         exp = base^exponent
         range | exponent == 0 = []
               | maxOffset > 1 = [1..maxOffset]
@@ -72,4 +66,56 @@ prop_isPowerIsFalseOtherwise (NonNegative base) (NonNegative exponent) =
         falses = [False | x <- range]
     in  [isPower base (exp + x) | x <- range] == falses
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- V1 added edge case protection against base being zero
+isPower' :: (Integral a, Ord a) => a -> a -> Bool
+isPower' base n
+                | base == n           = True
+                | m /= 0              = False
+                | d < base            = False
+                | d == base           = True
+                | d > base            = isPower base d
+                where   d = div n base
+                        m = mod n base
+
+-- isPower should detect all exponents
+prop_isPowerDetectsExponents' (Positive base) (NonNegative exponent) =
+    let exp = base^exponent
+    in isPower' base exp == True
+
+-- isPower should return False for all non exponents
+prop_isPowerIsFalseOtherwise' (Positive base) (NonNegative exponent) =
+    let maxOffset = base-1 -- Optimistic
+--        maxOffset = (base^(exponent+1)) - exp - 1 -- Naive, full
+        exp = base^exponent
+        range | exponent == 0 = []
+              | maxOffset > 1 = [1..maxOffset]
+              | otherwise = []
+        falses = [False | x <- range]
+    in  [isPower' base (exp + x) | x <- range] == falses
 
