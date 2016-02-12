@@ -22,4 +22,6 @@ done
 #quickCheck prop_isPowerDetectsExponents'
 #quickCheck prop_isPowerIsFalseOtherwise'
 
-
+clear
+echo
+echo    https://github.com/kiriakos/techtalk-quickcheck
