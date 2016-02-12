@@ -1,0 +1,3 @@
+quickCheck prop_isPowerDetectsExponents''
+
+
