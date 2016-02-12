@@ -1,6 +1,14 @@
 import Test.QuickCheck
 
+-- Boilerplate Positive int Type
+--module Positive (toPositive, Positive(unPositive)) where
+--newtype Positive = Positive { unPositive :: Int }
+--toPositive :: Int -> Maybe Positive
+--toPositive n = if (n < 0) then Nothing else Just (Positive n)
+-- /Boilerplate
+
 powers n = n : map (* n) (powers n)
+
 
 supertwos = powers 2
 
@@ -17,15 +25,32 @@ supertwos = powers 2
 -- Failure scenarios: * remove `&& m==0`
 --                    * last guard: `d < n` or `d < base`
 --                    * See optimization 1.
---                    * Divide by zero: base
+--                    * Divide by zero: base, implementation does not
+--                      account for zero as n being wrong.
+--                    * `n` equaling one is an automatic True (0 exp)
+--                    * Impl does not account for negative bases, we could
+--                      add `abs` usage to the implementation but for now
+--                      brevity adjust the generators
+--                    * Does not check for identity of `base` and `n`
+--
+-- Failures in Spec: * We only want to check for positive exponents.
+--                     Modify properties accordingly and return Property
+--                     type.
+--                   * Negative spec generates faulty cases
+--
 --
 -- Optimization scenarios:
 --  1. if `m` is anything other than zero there is no chance of `n`
 --     being an exponent od `base`
 --
 isPower :: (Integral a, Ord a) => a -> a -> Bool
-isPower base n  | base == 0           = False
+isPower base n
+                -- | base == n           = True  -- wrong position
+                | base == 0           = True
+                | n == 1              = True
+                | n == 0              = False
                 | m /= 0              = False
+                | base == n           = True  -- correct position
                 | d < base            = False
                 | d == base && m == 0 = True
                 | d > base            = isPower base d
@@ -33,14 +58,18 @@ isPower base n  | base == 0           = False
                         m = mod n base
 
 -- isPower should detect all exponents
-prop_isPowerDetectsExponents :: Int -> Int -> Bool
-prop_isPowerDetectsExponents base exponent
-        = isPower base (base^exponent) == True
+prop_isPowerDetectsExponents (NonNegative base) (NonNegative exponent) =
+    let exp = base^exponent
+    in isPower base exp == True
 
 -- isPower should return False for all non exponents
-prop_isPowerIsFalseOtherwise :: Int -> Int -> Bool
-prop_isPowerIsFalseOtherwise base exponent =
+prop_isPowerIsFalseOtherwise (NonNegative base) (NonNegative exponent) =
     let maxOffset = base-1
         exp = base^exponent
-        falses = [False | x <- [1..maxOffset]]
-    in [isPower base (exp + x) | x <- [1..maxOffset]] == falses
+        range | exponent == 0 = []
+              | maxOffset > 1 = [1..maxOffset]
+              | otherwise = []
+        falses = [False | x <- range]
+    in  [isPower base (exp + x) | x <- range] == falses
+
+
